@@ -21,13 +21,11 @@ def ask_file(prompt):
     Tk().withdraw()
     return filedialog.askopenfilename(title=prompt)
 
-# Ask user to select the output and final output directories
+# Ask user to select the output directory
 output_dir = ask_directory("Select the output directory")
-final_output_dir = ask_directory("Select the final output directory")
 
 # Ensure the directories exist
 os.makedirs(output_dir, exist_ok=True)
-os.makedirs(final_output_dir, exist_ok=True)
 
 # Ask user to select the input image file
 img_path = ask_file("Select the input image file")
@@ -83,18 +81,22 @@ def on_mouse(event, x, y, flag, param):
             leftButtonDown = False      
             leftButtonUp = True
 
+# Create the bounding box window
 # Create a window and set the mouse callback function
-cv2.namedWindow('img') 
-cv2.setMouseCallback('img', on_mouse)
-cv2.imshow('img', img)
+bounding_window_name = 'bounding_box'
+bounding_window_title = 'Draw a bounding box around the defect'
+cv2.namedWindow(bounding_window_name) 
+cv2.setWindowTitle(bounding_window_name, bounding_window_title)
+cv2.setMouseCallback(bounding_window_name, on_mouse)
+cv2.imshow(bounding_window_name, img)
 
 # Main loop to handle the user interaction for ROI selection
 while cv2.waitKey(2) == -1:
     if leftButtonDown and not leftButtonUp:  
         img_copy = img.copy()
         cv2.rectangle(img_copy, (rect[0], rect[1]), (rect[2], rect[3]), (0, 255, 0), 2)  
-        cv2.namedWindow('img', cv2.WINDOW_NORMAL) 
-        cv2.imshow('img', img_copy)
+        cv2.namedWindow(bounding_window_name, cv2.WINDOW_NORMAL) 
+        cv2.imshow(bounding_window_name, img_copy)
 
     elif not leftButtonDown and leftButtonUp and rect[2] - rect[0] != 0 and rect[3] - rect[1] != 0:
         # Convert to width and height
@@ -105,7 +107,7 @@ while cv2.waitKey(2) == -1:
         cv2.grabCut(img, mask, rect_copy, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_RECT)
         mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
         img_show = img * mask2[:, :, np.newaxis]      
-        cv2.imshow('grabCut1', img_show)                     
+        cv2.imshow('Initial mask', img_show)                     
         
         # Initialize drawing flags
         drawing_bg = False
@@ -139,26 +141,26 @@ while cv2.waitKey(2) == -1:
                 mask_img_name = f"{img_base_name}_mask{img_ext}"
                 file_path = os.path.join(output_dir, mask_img_name)
                 cv2.imwrite(file_path, imgmask)  # Save the mask image
-                imgmask_BF = cv2.imread(file_path)
-                cv2.imshow('mask image', imgmask_BF)
+                imgmask_BF = cv2.imread(file_path)              
                 mask3 = cv2.cvtColor(imgmask_BF, cv2.COLOR_BGR2GRAY)
                 mask[mask3 == 0] = 0                                     
                 mask[mask3 == 255] = 1  
                 cv2.grabCut(img, mask, None, bgdModel, fgdModel, 5, cv2.GC_INIT_WITH_MASK)
                 mask3 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
                 img = img * mask3[:, :, np.newaxis]                         
-                cv2.imshow('grabCut2', img)
+                cv2.imshow('Segmented area', img)
                 
                 # Save the final image to the specified directory
-                final_output_path = os.path.join(final_output_dir, f"{img_base_name}_segment{img_ext}")
+                final_output_path = os.path.join(output_dir, f"{img_base_name}_segment{img_ext}")
                 cv2.imwrite(final_output_path, img)
                 print(f"Image saved to {final_output_path}")
                 
-            cv2.imshow('drawing_BFG', imgmask)                
+            cv2.imshow(outline_filling_window_name, imgmask)                
         
-        cv2.namedWindow('drawing_BFG')                       
-        cv2.setMouseCallback('drawing_BFG', draw_2)              
-        cv2.imshow('drawing_BFG', imgmask)                           
+        outline_filling_window_name = 'Draw outline and fill defective area'
+        cv2.namedWindow( outline_filling_window_name)                       
+        cv2.setMouseCallback( outline_filling_window_name, draw_2)              
+        cv2.imshow(outline_filling_window_name, imgmask)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
