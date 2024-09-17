@@ -1,0 +1,6 @@
+{
+    "text1": "User-guided segmentation\nStep 1: Draw a bounding box around the ROI.\nStep 2: Draw the ROI's outline and fill it in.\nStep 3: The segmented image will be saved to the same directory as the input image.\nStep 4: Clear the selection and go back to Step 1.",
+    "text2": "ORIGINAL IMAGE",
+    "text3": "SEGMENTED AREA",
+    "text4": "t-SNE plot of source domain embeddings\nStep 1: Choose a set of directories containing embeddings to be plotted.\n\nStep 2: A t-SNE plot of embeddings will be created."
+}
