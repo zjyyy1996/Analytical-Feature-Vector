@@ -3,6 +3,8 @@ import os
 import sys
 import subprocess
 from PyQt6 import QtCore, QtWidgets, QtGui
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
@@ -18,7 +20,7 @@ class Ui_Dialog(object):
         self.clearSelection.setGeometry(QtCore.QRect(180, 230, 111, 41))
         self.clearSelection.setObjectName("clearSelection")
         self.textBrowser = QtWidgets.QTextBrowser(parent=Dialog)
-        self.textBrowser.setGeometry(QtCore.QRect(20, 70, 271, 141))
+        self.textBrowser.setGeometry(QtCore.QRect(20, 30, 271, 180))
         self.textBrowser.setObjectName("textBrowser")
         self.textBrowser_2 = QtWidgets.QTextBrowser(parent=Dialog)
         self.textBrowser_2.setGeometry(QtCore.QRect(320, 20, 281, 31))
@@ -47,10 +49,12 @@ class Ui_Dialog(object):
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
 
-        # Connect button to function
+        # Connect buttons to functions
         self.chooseInputImage.clicked.connect(self.run_segmentation_script)
         self.clearSelection.clicked.connect(self.clear_selection)
-        self.chooseEmbeddingDirs.clicked.connect(self.run_embedding_visu_script) # HELLO
+        self.chooseEmbeddingDirs.clicked.connect(self.run_embedding_visu_script)
+
+        self.canvas = None  # This will hold the matplotlib canvas
 
     def retranslateUi(self, Dialog):
         _translate = QtCore.QCoreApplication.translate
@@ -60,11 +64,12 @@ class Ui_Dialog(object):
         # Load all text content from JSON file
         text_content = self.load_text_from_json("text_content.json")
         
-        # Set the text from the JSON file into the respective text browsers
-        self.textBrowser.setPlainText(text_content.get("text1", ""))
-        self.textBrowser_2.setPlainText(text_content.get("text2", ""))
-        self.textBrowser_3.setPlainText(text_content.get("text3", ""))
-        self.textBrowser_4.setPlainText(text_content.get("text4", ""))
+        # Set the text from the JSON file into the respective text browsers        
+        self.textBrowser.setHtml(text_content.get("text1", ""))
+        self.textBrowser_2.setHtml(text_content.get("text2", ""))
+        self.textBrowser_3.setHtml(text_content.get("text3", ""))
+        self.textBrowser_4.setHtml(text_content.get("text4", ""))
+
         
         self.chooseEmbeddingDirs.setText(_translate("Dialog", "Choose Domains"))
         self.chooseInputImage.setText(_translate("Dialog", "Choose Input Image"))
@@ -73,27 +78,25 @@ class Ui_Dialog(object):
         try:
             # Get the current directory of this script
             current_directory = os.path.dirname(os.path.abspath(__file__))
+
             # Construct the full path to segmentation.py
             script_path = os.path.join(current_directory, 'Segmentation.py')
-            
+
             # Run the segmentation.py script and capture its output
             result = subprocess.run(["python", script_path], capture_output=True, text=True)
-            
+
             # Get the output from the segmentation script
             output = result.stdout.strip()
+
             if result.returncode == 0:
                 # The output will be in the format "input_image_path,segment_image_path"
                 input_image_path, segment_image_path = output.split(',')
-                print(f"Input Image: {input_image_path}")
-                print(f"Segmented Image: {segment_image_path}")
 
                 # Display images in the QGraphicsViews
                 self.display_image(self.originalImage, input_image_path)
                 self.display_image(self.segmentedImage, segment_image_path)
-
             else:
                 print(f"Segmentation script failed: {result.stderr}")
-
         except Exception as e:
             print(f"Error running segmentation script: {e}")
 
@@ -103,7 +106,7 @@ class Ui_Dialog(object):
         if pixmap.isNull():
             print(f"Failed to load image: {image_path}")
             return
-
+        
         # Create a scene to display the pixmap in the QGraphicsView
         scene = QtWidgets.QGraphicsScene()
         scene.addPixmap(pixmap)
@@ -115,12 +118,12 @@ class Ui_Dialog(object):
         self.originalImage.setScene(None)
         self.segmentedImage.setScene(None)
 
-
     # Helper function to load text from a JSON file
     def load_text_from_json(self, filename):
         try:
             # Get the directory of the current script
             script_dir = os.path.dirname(os.path.abspath(__file__))
+
             # Construct the full path to the JSON file
             file_path = os.path.join(script_dir, filename)
             
@@ -130,22 +133,25 @@ class Ui_Dialog(object):
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Error loading JSON file {filename}: {e}")
             return {}
-        
+
     def run_embedding_visu_script(self):
         try:
-            # Get the current directory of this script
             current_directory = os.path.dirname(os.path.abspath(__file__))
-            # Construct the full path to EmbeddingVisu.py
             script_path = os.path.join(current_directory, 'EmbeddingVisu.py')
 
-            # Run the EmbeddingVisu.py script
-            result = subprocess.run(["python", script_path], capture_output=True, text=True)
+            # Clear the previous plot if exists
+            if self.canvas:
+                self.embeddingsView.scene().clear()
 
-            # Check if the script ran successfully
-            if result.returncode == 0:
-                print(f"EmbeddingVisu script output: {result.stdout}")
-            else:
-                print(f"Error in EmbeddingVisu script: {result.stderr}")
+            # Import and call EmbeddingVisu.main, which now returns the figure
+            import EmbeddingVisu
+            fig = EmbeddingVisu.main()
+
+            # Create a matplotlib canvas and add it to the embeddingsView
+            self.canvas = FigureCanvas(fig)
+            scene = QtWidgets.QGraphicsScene(self.embeddingsView)
+            scene.addWidget(self.canvas)
+            self.embeddingsView.setScene(scene)
 
         except Exception as e:
             print(f"Error running EmbeddingVisu script: {e}")

@@ -36,7 +36,7 @@ def main():
 
     if not folder_paths:
         print("No folders were selected.")
-        return
+        return None
 
     embeddings_list = []
     labels_list = []
@@ -71,7 +71,9 @@ def main():
 
     ax.set_title('3D t-SNE of Embeddings')
     ax.legend()
-    plt.show()
+
+    # Instead of plt.show(), return the figure to be used in the GUI
+    return fig
 
 if __name__ == "__main__":
     main()
