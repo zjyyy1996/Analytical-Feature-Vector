@@ -146,6 +146,15 @@ def main():
     # Return the input image and final output image paths via stdout
     print(f"{img_path},{final_output_path}")
 
+    # Call to other script, where .npy is made from .png
+    # Run the embedding feature generation script
+    # Run the segmentation.py script and capture its output
+    # Construct the full path to segmentation.py
+    # script_path = os.path.join(current_directory, 'MakeFeatureVector.py')
+    # result = subprocess.run(["python", script_path], capture_output=True, text=True)
+    # Save .npy embedding in "output_dir"
+    # cv2.imwrite(final_output_path_npy, img_npy)
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
