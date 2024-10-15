@@ -85,8 +85,8 @@ class Ui_Dialog(object):
             # Run the segmentation.py script and capture its output
             result = subprocess.run(["python", script_path], capture_output=True, text=True)
 
-            # Get the output from the segmentation script
-            output = result.stdout.strip()
+            # Get the output from the segmentation script            
+            output = result.stdout.strip().replace("\\", "/")
 
             if result.returncode == 0:
                 # The output will be in the format "input_image_path,segment_image_path"
@@ -99,6 +99,26 @@ class Ui_Dialog(object):
                 print(f"Segmentation script failed: {result.stderr}")
         except Exception as e:
             print(f"Error running segmentation script: {e}")
+            
+        try:
+            # Get the current directory of this script
+            current_directory = os.path.dirname(os.path.abspath(__file__))
+
+            # Construct the full path to script
+            script_path = os.path.join(current_directory, 'testArgparse.py')
+
+            # Define the argument to pass to the script
+            argument = segment_image_path
+
+            # Run the script 
+            result = subprocess.run(["python", script_path, argument], capture_output=True, text=True)
+
+            # Get the output from the segmentation script
+            # output = result.stdout.strip()            
+        except Exception as e:
+            print(f"Error running script: {e}")
+
+
 
     def display_image(self, graphics_view, image_path):
         # Load the image into a QPixmap
